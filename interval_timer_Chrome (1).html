@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101820">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="間歇計時器">
+
+<title>間歇計時器</title>
+<style>
+:root{color-scheme:dark;--bg:#101820;--panel:#192630;--muted:#9aabb7;--text:#f4f7fa;--green:#72e0b2;--orange:#ffbd69;--line:#31414d}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;min-height:100dvh;background:radial-gradient(ellipse at top,#203441 0%,var(--bg) 62%);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--text);display:flex;justify-content:center;align-items:center;padding:calc(14px + env(safe-area-inset-top)) 14px calc(18px + env(safe-area-inset-bottom))}
+main{width:min(100%,460px)}header{text-align:center;margin:5px 0 18px}header .eyebrow{color:var(--green);font-size:11px;font-weight:800;letter-spacing:.18em}h1{font-size:26px;margin:6px 0 3px}header p{margin:0;color:var(--muted);font-size:13px}
+.card{background:rgba(25,38,48,.96);border:1px solid var(--line);border-radius:24px;padding:20px 18px;box-shadow:0 22px 60px #0003}
+.section-label{display:block;color:var(--muted);font-size:12px;margin:0 0 8px}
+.preset-row{display:flex;gap:8px;align-items:center;margin-bottom:15px}
+select,input[type=text],input[type=number]{background:#101a22;border:1px solid #40515d;border-radius:11px;color:var(--text);padding:11px 10px;font:inherit;min-width:0}
+select{flex:1;width:100%}.small-btn{background:#2b3b46;color:var(--text);border:1px solid #40515d;border-radius:11px;padding:11px 12px;font:inherit;font-weight:700;white-space:nowrap;cursor:pointer}
+.phase-wrap{text-align:center}.phase{display:inline-flex;align-items:center;gap:8px;border-radius:99px;padding:8px 13px;background:#243b3b;color:var(--green);font-size:13px;font-weight:750}.phase.rest{background:#473727;color:var(--orange)}.dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+.clock{font-size:clamp(72px,20vw,98px);font-weight:760;letter-spacing:-.06em;text-align:center;line-height:1.12;font-variant-numeric:tabular-nums;margin:18px 0 14px}
+.track{height:6px;background:#34444e;border-radius:99px;overflow:hidden;margin-bottom:18px}.fill{height:100%;width:100%;background:var(--green);border-radius:99px}.fill.rest{background:var(--orange)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:17px}.stat{background:#111d25;border:1px solid #2c3c47;border-radius:14px;padding:11px}.stat span{display:block;color:var(--muted);font-size:11px;margin-bottom:4px}.stat strong{font-size:17px}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:9px}.btn{border:0;border-radius:14px;padding:14px 10px;font:inherit;font-weight:800;cursor:pointer}.primary{background:var(--green);color:#10221c}.secondary{background:#2b3b46;color:var(--text);border:1px solid #40515d}
+.settings{margin-top:16px;padding-top:15px;border-top:1px solid var(--line)}.setting{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:10px 0;font-size:13px}.setting>label:first-child{color:#dbe4ea}.setting input[type=number]{width:82px;text-align:center;padding:8px}.toggle{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px}.toggle input{accent-color:var(--green);width:17px;height:17px}
+.save-row{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:13px}.save-row input{width:100%}.status{text-align:center;min-height:20px;color:var(--muted);font-size:12px;margin-top:12px}.hint{text-align:center;color:var(--muted);font-size:11px;line-height:1.5;margin:13px 8px 0}
+@media(max-width:360px){.card{padding:17px 14px}.small-btn{padding:10px 9px}.btn{padding:13px 8px}}
+</style>
+</head>
+<body>
+<main>
+<header><div class="eyebrow">SIMPLE · REPEAT · MOVE</div><h1>間歇計時器</h1><p>選一組設定，按開始就能專心運動。</p></header>
+<section class="card">
+<span class="section-label">我的運動設定</span>
+<div class="preset-row">
+<select id="presetSelect" aria-label="選擇運動設定"></select>
+<button class="small-btn" id="deletePreset" type="button" aria-label="刪除目前設定">刪除</button>
+</div>
+<div class="phase-wrap"><span class="phase" id="phase"><span class="dot"></span><span id="phaseText">準備開始</span></span></div>
+<div class="clock" id="clock" role="timer" aria-live="off">01:00</div>
+<div class="track"><div class="fill" id="fill"></div></div>
+<div class="stats">
+<div class="stat"><span>目前循環</span><strong id="cycle">第 1 輪</strong></div>
+<div class="stat"><span>下一階段</span><strong id="next">休息 20 秒</strong></div>
+</div>
+<div class="controls">
+<button class="btn primary" id="start">開始</button>
+<button class="btn secondary" id="end">結束</button>
+</div>
+<div class="settings">
+<div class="setting"><label for="work">運動時間（秒）</label><input id="work" type="number" min="1" max="3600" value="60"></div>
+<div class="setting"><label for="rest">休息時間（秒）</label><input id="rest" type="number" min="0" max="3600" value="20"></div>
+<div class="setting"><label for="side">左右換邊提醒</label><label class="toggle"><input id="side" type="checkbox">每輪提醒</label></div>
+<div class="setting"><label for="sound">提示音</label><label class="toggle"><input id="sound" type="checkbox" checked>開啟</label></div>
+<div class="setting"><label for="voice">語音提示</label><label class="toggle"><input id="voice" type="checkbox">開啟</label></div>
+<div class="save-row"><input id="presetName" type="text" maxlength="32" placeholder="新設定名稱，例如：伸展"><button class="small-btn" id="savePreset" type="button">儲存設定</button></div>
+</div>
+<div class="status" id="status">預設：運動 60 秒 → 休息 20 秒，持續循環</div>
+</section>
+<p class="hint">設定會保存在這台裝置的瀏覽器中。手機可加入主畫面，像 App 一樣開啟。</p>
+</main>
+<script>
+(() => {
+const $=id=>document.getElementById(id);
+const STORE='intervalTimerPresets_v2';
+const defaults=[{id:'default',name:'基本設定（60／20）',work:60,rest:20,side:false}];
+let presets=loadPresets(), activeId=presets[0]?.id||'default';
+let phase='work',remaining=60,duration=60,cycle=1,running=false,ended=true,deadline=0,ticker=null;
+const startBtn=$('start');
+function loadPresets(){try{const p=JSON.parse(localStorage.getItem(STORE));return Array.isArray(p)&&p.length?p:defaults.map(x=>({...x}));}catch{return defaults.map(x=>({...x}));}}
+function persist(){try{localStorage.setItem(STORE,JSON.stringify(presets));}catch{}}
+function secs(id,fallback){const n=Number.parseInt($(id).value,10);return Number.isFinite(n)?Math.max(id==='work'?1:0,Math.min(3600,n)):fallback;}
+function fmt(n){n=Math.max(0,Math.ceil(n));return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0');}
+function current(){return presets.find(p=>p.id===activeId)||presets[0];}
+function fillSelect(){const s=$('presetSelect');s.innerHTML='';presets.forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.name;s.appendChild(o)});s.value=activeId;$('deletePreset').disabled=presets.length<=1;}
+function applyPreset(p){activeId=p.id;$('work').value=p.work;$('rest').value=p.rest;$('side').checked=!!p.side;fillSelect();if(ended){phase='work';duration=secs('work',60);remaining=duration;cycle=1;}render();}
+function say(t){if($('voice').checked&&'speechSynthesis'in window){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='zh-TW';u.rate=1.05;speechSynthesis.speak(u);}}
+function beep(){if(!$('sound').checked)return;try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const c=new C(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=phase==='rest'?660:880;g.gain.setValueAtTime(.001,c.currentTime);g.gain.exponentialRampToValueAtTime(.14,c.currentTime+.02);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.24);o.start();o.stop(c.currentTime+.26);o.onended=()=>c.close();}catch{}}
+function render(){$('clock').textContent=fmt(remaining);$('phaseText').textContent=ended?'準備開始':phase==='work'?'運動中':'休息中';$('phase').className='phase'+(phase==='rest'&&!ended?' rest':'');$('fill').className='fill'+(phase==='rest'&&!ended?' rest':'');$('fill').style.width=(duration?Math.max(0,Math.min(100,remaining/duration*100)):0)+'%';$('cycle').textContent='第 '+cycle+' 輪';$('next').textContent=phase==='work'?'休息 '+secs('rest',20)+' 秒':'運動 '+secs('work',60)+' 秒';startBtn.textContent=running?'暫停':ended?'開始':'繼續';}
+function stopTicker(){if(ticker){clearInterval(ticker);ticker=null;}}
+function tick(){remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));if(remaining<=0){transition();return;}render();}
+function transition(){if(phase==='work'){const r=secs('rest',20);if(r===0){phase='work';cycle++;duration=secs('work',60);remaining=duration;}else{phase='rest';duration=r;remaining=r;}}else{phase='work';cycle++;duration=secs('work',60);remaining=duration;}beep();let msg=phase==='work'?($('side').checked?'換邊，開始運動':'開始運動'):'休息時間';$('status').textContent=msg;say(msg);deadline=Date.now()+remaining*1000;render();}
+function start(){if(running){running=false;stopTicker();$('status').textContent='已暫停';render();return;}if(ended){phase='work';cycle=1;duration=secs('work',60);remaining=duration;ended=false;}$('status').textContent='計時中';running=true;deadline=Date.now()+remaining*1000;stopTicker();ticker=setInterval(tick,200);say('開始運動');render();}
+function end(){running=false;ended=true;stopTicker();if('speechSynthesis'in window)speechSynthesis.cancel();phase='work';duration=secs('work',60);remaining=duration;cycle=1;$('status').textContent='已結束，準備好再按開始';render();}
+$('presetSelect').addEventListener('change',e=>{if(running){running=false;stopTicker();}ended=true;applyPreset(presets.find(p=>p.id===e.target.value)||presets[0]);$('status').textContent='已切換設定';});
+$('savePreset').addEventListener('click',()=>{const name=$('presetName').value.trim();if(!name){$('status').textContent='請先輸入設定名稱';$('presetName').focus();return;}const work=secs('work',60),rest=secs('rest',20),side=$('side').checked;let p=presets.find(x=>x.name.toLowerCase()===name.toLowerCase());if(p){p.work=work;p.rest=rest;p.side=side;activeId=p.id;$('status').textContent='已更新「'+name+'」';}else{p={id:'p_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,6),name,work,rest,side};presets.push(p);activeId=p.id;$('status').textContent='已儲存「'+name+'」';}persist();fillSelect();applyPreset(p);$('presetName').value='';});
+$('deletePreset').addEventListener('click',()=>{if(presets.length<=1)return;const p=current();presets=presets.filter(x=>x.id!==p.id);activeId=presets[0].id;persist();applyPreset(presets[0]);$('status').textContent='已刪除設定';});
+startBtn.addEventListener('click',start);$('end').addEventListener('click',end);
+['work','rest'].forEach(id=>$(id).addEventListener('change',()=>{if(ended){duration=secs('work',60);remaining=duration;}render();}));
+presets=presets.map(p=>({...p,work:Math.max(1,Math.min(3600,Number(p.work)||60)),rest:Math.max(0,Math.min(3600,Number(p.rest)||20))}));persist();activeId=presets[0].id;fillSelect();applyPreset(presets[0]);
+
+})();
+</script>
+</body>
+</html>
